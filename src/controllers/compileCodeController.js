@@ -5,8 +5,11 @@ const compileCodeController = async (req, res) => {
     const { filename, input } = req.body
    
     try {
-        const a = filename.split("\\")
-        console.log(a);
+        var a = ""
+        if(filename.includes("\\"))
+             a = filename.split("\\")
+        else
+             a = filename.split("/")
         const lang = a[a.length - 2]
    
         const title = a[a.length - 1].split(".")[0]
