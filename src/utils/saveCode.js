@@ -7,7 +7,7 @@ const saveCode = async (title, code, format, lang) =>
     switch (lang) {
       case "python": {
         const relativePath = path.join(__dirname,"..", "codes", "python", `${title}.${format}`)
-        // console.log(relativePath);
+        console.log("relativePath",relativePath);
         return await writeToFile(code,relativePath)
       }
       case "cpp": {
