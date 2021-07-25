@@ -5,15 +5,22 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev":"nodemon src/index.js"
+    "dev": "nodemon src/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^2.0.12"
+  },
   "dependencies": {
+    "bcrypt": "^5.0.1",
     "child-process": "^1.0.2",
+    "connect-mongo": "^4.4.1",
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "nodemon": "^2.0.12"
+    "express-session": "^1.17.2",
+    "mongoose": "^5.13.3",
+    "validator": "^13.6.0"
   }
 }
