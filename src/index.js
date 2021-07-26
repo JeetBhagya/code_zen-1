@@ -1,10 +1,12 @@
 const express = require("express")
+const cors = require("cors")
 const app = express()
 const session  =  require("express-session")
 const codeRoutes = require("./routes/codeRoutes")
 const authRoutes = require("./routes/authRoutes")
 const mongoose = require("mongoose")
 const MongoStore = require("connect-mongo")
+// var mongoUri = "mongodb+srv://xanjit:xanjit123@todoly.ygsi4.mongodb.net/todoly?retryWrites=true&w=majority"
 mongoose.connect("mongodb://127.0.0.1:27017/codezen", { useUnifiedTopology: true, useNewUrlParser: true,createIndexes:true,useFindAndModify:true }, (err,data) => {
     
     app.listen(process.env.PORT || PORT, () => {
@@ -12,6 +14,7 @@ mongoose.connect("mongodb://127.0.0.1:27017/codezen", { useUnifiedTopology: true
     })
 })
 const sessionStore = new MongoStore({ mongoUrl:"mongodb://127.0.0.1:27017/codezen",mongoOptions:{ useUnifiedTopology: true, useNewUrlParser: true}})
+app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(session({
