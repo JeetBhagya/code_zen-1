@@ -1,12 +1,13 @@
-const saveCode = require("../utils/saveCode")
+const { saveCode } = require("../utils/codeUtil")
 const saveCodeController = async (req, res) => {
     const { title, code, format, lang } = req.body
-    console.log(title,code,format,lang);
     try {
-        const result = await saveCode(title, code, format, lang,req.session.user.id,req.session.user.name)
-        res.json({"status":result})
+
+        const result = await saveCode(title, code, format, lang,req.session.user.id)
+        res.json({ "data": result })
     }
     catch (e) {
+        console.log(e);
         res.status(404).json({errors:e})
     }
 }

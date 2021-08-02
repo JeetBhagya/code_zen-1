@@ -7,9 +7,36 @@ const codeSchema = new Schema({
     "title": { type: String, required: [true, "Title is required"],unique:true },
     "code": { type: String },
     "format":{ type: String, required: [true, "Format is required"] },
-    "path": { type: String, required: [true, "Path is required"],unique:true },
+    "updated_at": { type:Date,default:new Date() },
     "created_at": { type:Date,default:new Date() }
 })
+// codeSchema.pre("updateOne", async function(next){
+
+// console.log("UpdateOnePost",this.path);
+//     next()
+    
+    
+// })
+// codeSchema.pre("save", async function(next){
+//     this.path = await encrypt(this.path)
+// console.log("SaveOne",this.path);
+
+//     next()
+    
+    
+// })
+// codeSchema.post("init", async function(next){
+//     this.path = await dencrpyt(this.path)
+//        console.log("Path Denc",this.path);
+
+
+//     next()
+    
+    
+// })
+
+
+
 
 const Code = model("Code", codeSchema)
 

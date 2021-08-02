@@ -1,159 +1,155 @@
 const { spawn, exec } = require('child_process');
 const process = require("process")
 const path = require("path")
+const Code = require("../models/Code")
+const { exists} = require("../utils/codeUtil")
 const fs = require("fs/promises")
 
 const compileCodeController = async (req, res) => {
-    const { filename, input } = req.body
-
-    try {
-        var a = ""
-        if(filename.includes("\\"))
-             a = filename.split("\\")
-        else
-            a = filename.split("/")
-        var lang = ""
-        if (process.env.PORT) {
-            lang = a[a.length - 4]
-        }
-        else {
-            lang = a[a.length - 3]
-
-        }
+    const { id, input } = req.body
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+        res.json({"status":"Invalid ID"})
+}
+    const _code = await Code.findOne({ _id: id })
+    const rpath = path.join(__dirname, "..",id)
+    if (!_code)
+        res.json({"status":"Wrong ID"})
+    if (await exists(rpath) === false && _code)
+        await fs.mkdir(rpath)
+    if (_code) {
+        try {
         
-        const title = a[a.length - 1].split(".")[0]
-        console.log(title,lang);
-        var output = "";
-        if (lang === "python") {
-            var args = [filename]
-            var inputFile = filename.replace(a[a.length - 1],"input.txt")
-            var outputFile = filename.replace(a[a.length - 1], "output.txt")
-            var inputs = input.toString()
-            var isKilled = false
-            inputs = inputs.replace(/,/g, "\n")
-            await fs.writeFile(inputFile,inputs)
+    
+            const title = _code.title
+            const id = _code._id
+            const lang = _code.lang
+            const code = _code.code
+            const format = _code.format
+            var output = "";
+            const filePath = path.join(rpath,title + "." + format)
+            if (lang === "python") {
+                var codes = `
+import sys
+sys.stdin = open(r'${path.join(rpath, "input.txt")}', 'r')
+${code}`
+                
+                await fs.writeFile(filePath, codes)
+                var args = [filePath]
+                var inputFile = path.join(rpath,"input.txt")
+                var inputs = input.toString()
+                var isKilled = false
+                inputs = inputs.replace(/,/g, "\n")
+                await fs.writeFile(inputFile, inputs)
   
-            var errors = []
-            const python = spawn('python', args, {detached:true});
-                      const timeout = setTimeout(() => {
-  try {
-      process.kill(python.pid, 'SIGKILL');
-      isKilled = true
-  } catch (e) {
+                var errors = []
+                console.log("args",args)
+                const python = spawn('python3', args, { detached: true });
+                const timeout = setTimeout(() => {
+                    try {
+                        process.kill(python.pid, 'SIGKILL');
+                        isKilled = true
+                    } catch (e) {
 
                         errors.push(e)
-  }
-}, 1000*2);
-            python.on('error', err => errors.push(err)
-);
-            python.stdout.on('data', function (data) {
-                // output = data.toString();
-                console.log(data.toString());
-            });
-             python.stderr.on('data', function (data) {
-                        errors.push(data)
-
- });
-   
-            python.on('exit', () => {
+                    }
+                }, 1000);
+                python.on('error', err => {
+                    errors.push(err.toString())
+                }
+                );
+                python.stdout.on('data', function (data) {
+                    output = data.toString();
+                });
+                python.stderr.on('data', function (data) {
+                    data = data.toString()
+                    if (data.includes(","))
+                        data = data.split(",")[1]
                         
-                            if (isKilled) {
-                                errors.push("TLE")
-                                //    res.json({ "output": "", "errors": errors })
+                    errors.push(data.toString())
+
+                });
+   
+                python.on('exit', () => {
+                        
+                    if (isKilled) {
                        
-                                clearTimeout(timeout);
-                            }
-                        });
-            python.on('close', async(code) => {
-                output = await fs.readFile(outputFile)
-                res.json({ "output": output.toString(), "errors": errors.toString() })
+                        clearTimeout(timeout);
+                    }
+                });
+                python.on('close', async (code) => {
+                    await fs.rmdir(rpath, { recursive: true });
+                    res.json({ "output": output.toString(), "errors": errors.toString() })
 
-            });
+                });
             
-        }
-        else if (lang === "cpp" || lang === "c") {
-            var args = ['-o', title, filename]
-                    var errors = []
+            }
+            else if (lang === "cpp" || lang === "c") {
+                var inputFile = path.join(rpath,"input.txt")
 
-        const relativePath = path.join(__dirname,"..", "codes", "cpp", `${title}`)
- const cpp = spawn('g++',args,{ detached:true});
- cpp.stdout.on('data', function (data) {
-  output = data.toString();
- });
- cpp.stderr.on('data', function (data) {
-                        errors.push(data)
+                         var codes = `
+#include<bits/stdc++.h>
+using namespace std;
+int main()
+{
+ios_base::sync_with_stdio(0), cin.tie(0), cout.tie(0);
+#ifndef ONLINE_JUDGE
+  freopen("${inputFile.replace(/\\/g,"\\\\")}", "r", stdin);
+#endif
 
- });
-            cpp.on('close', (code) => {
+${code}
+return 0;
+      }
+        `
+                await fs.writeFile(filePath, codes)       
+                var args = [filePath]
+                var inputs = input.toString()
+                // var isKilled = false
+                inputs = inputs.replace(/,/g, "\n")
+                await fs.writeFile(inputFile, inputs)
+                var args = [filePath,'-o', rpath+"/"+title]
+                var errors = []
                 
-                exec(relativePath, {timeout:100*2}, (error, stdout, stderr) => {
-                    
-                    if (error)
-                        errors.push(errors)
-                    if (stderr)
-                        errors.push(stderr)
+                const cpp = spawn('g++', args, { detached: true });
+                cpp.stdout.on('data', function (data) {
+                    // output = data.toString();
+                });
+                cpp.stderr.on('data',async function (data) {
+                    errors.push(data)
+                    await fs.rmdir(rpath, { recursive: true });
+                    res.json({ "output": "", "errors": errors.toString() })
+
+                });
+                cpp.on('close', (code) => {
+                
+                   exec(path.join(rpath,title), { timeout: 100 * 2 ,}, async(error, stdout, stderr) => {
+             
+                        await fs.rmdir(rpath, { recursive: true });
+                 
+                    // console.log("stderr",stderr);
+                        if (error)
+                            errors.push(error)
+                        if (stderr)
+                            errors.push(stderr)
 
                         res.json({ "output": stdout, "errors": errors.toString() })
                         
                 
+                    });
+                   
+
                 });
-
- });
-        }
-        else {
+            }
+            else {
             
-        }
-        
-    }
-    catch (e) {
-        res.status(501).send({errors:e})
-    }
-}
 
-
-
-
-const runCode = async(filename,input)=>
-{
-    const a = filename.split("\\")
-    const lang = a[a.length - 2]
-
-    const title = a[a.length - 1].split(".")[0]
-    var output="";
-    switch (lang) {
-        case "python": {
-            var args = [filename, ...input]
- const python = spawn('python',args);
- python.stdout.on('data', function (data) {
-  output = data.toString();
- });
-            python.on('close', (code) => {
-
- });
-            break;
-        }
-        case "cpp": {
-            
-            var output;
-            var args = ["-o",title,filename,...input]
- const cpp = spawn('python',args);
- cpp.stdout.on('data', function (data) {
-  output = data.toString();
- });
-                cpp.on('close', (code) => {
-        exec(relativePath+title, (error, stdout, stderr) =>  stdout);
-
- });
-            break;
+            }
         
         }
-        case "javascript": {
-            console.log("Javascript");
-            break;
-
+        catch (e) {
+            console.log(e);
+            res.status(501).send({ errors: e })
         }
     }
-    return output
 }
 
 module.exports = compileCodeController
