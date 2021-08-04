@@ -1,54 +1,25 @@
 const Code = require("../models/Code")
-const saveCode = async (title, code, format, lang, user_id) => {
-  switch (lang) {
-    case "python": {
+const saveCode = async (title, code, format, lang, user_id,id) => {
   
-      
-      const _code = await Code.findOne({ user_id, title }, { lang, title, code, format, user_id })
-            
-      if (!_code) {
-        id = await Code.create({ lang, title, code, format, user_id })
-        return id
+  
+      // if(id)
+      // const _code = await Code.findOne({ user_id, title }, { lang, title, code, format, user_id })
+            console.log("save_code_id",id)
+      if (!id) {
+        console.log("create")
+        let _code = await Code.create({ lang, title, code, format, user_id })
+        return _code
       }
       else {
-        id = _code._id
-        await Code.updateOne({_id:id } , { lang, title, code, format,  user_id })
+        console.log("update")
+
+       let _code =  await Code.updateOne({_id:id } , { lang, title, code, format })
 
         return _code
       }
-    }
-    case "cpp": {
     
-      
-     
-      let id = ""
-      const _code = await Code.findOne({ user_id, title }, { lang, title, code, format, user_id })
-      if (!_code) {
-        id = await Code.create({ lang, title, code, format, user_id })
-        return _id
-      }
-      else {
-        await Code.findOneAndUpdate({ user_id, title }, { lang, title, code, format, user_id })
-
-        return _code
-      }
-    }
-    case "javascript": {
  
-      let id = ""
-      const _code = await Code.findOne({ user_id, title }, { lang, title, code, format, user_id })
-      if (!_code) {
-        id = await Code.create({ lang, title, code, format, user_id })
-        return _id
-      }
-      else {
-        await Code.findOneAndUpdate({ user_id, title }, { lang, title, code, format, user_id })
-
-        return _code
-      }
-        
-    }
-  }
+  
 }
 
 
